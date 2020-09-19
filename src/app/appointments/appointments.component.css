@@ -1,0 +1,42 @@
+.filter{
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.enable-button {
+  background-color: #3CA6CC;
+}
+
+.disable-button {
+  background-color: #CCCCCC;
+}
+
+.err-validation {
+  color: red;
+  font-size: smaller;
+}
+
+/* .appointmentDialog-container >>> .ui-widget {
+  font-family: "Calibri";
+  color: black;
+}
+
+.appointmentDialog-container >>> .btnGray.ui-widget {
+  background-color: #CCCCCC;
+  color: white;
+}
+
+.appointmentDialog-container >>> .btnSubmit.ui-widget {
+  background-color: #3CA6CC !important;
+  color: white;
+}
+
+.appointmentDialog-container >>> .btn-modal-footer {
+  color: white;
+  border: 1px solid darkblue;
+}
+
+.appointmentDialog-container >>> #appointmentModal p-dialog .ui-dialog-content.ui-widget-content {
+  overflow: scroll;
+} */

@@ -1,0 +1,238 @@
+<h3 class="text-center">Appointments</h3><br/><br/>
+
+<div class="row filter">
+  <div class="col-md-2">
+    <label class="label-name">Start Date :</label>
+    <p-calendar [(ngModel)]="startDateFilter" 
+                [maxDate]="endDateFilter"
+                (onSelect)="validateDateFilters()"
+                [disabledDays]="[0]"
+                [readonlyInput]="true"
+                [showIcon]="true">
+    </p-calendar>
+  </div>
+  <div class="col-md-2">
+    <label class="label-name">End Date :</label>
+    <p-calendar [(ngModel)]="endDateFilter" 
+                [minDate]="startDateFilter"
+                (onSelect)="validateDateFilters()"
+                [disabledDays]="[0]"
+                [readonlyInput]="true" 
+                [showIcon]="true">
+    </p-calendar>
+  </div>
+  <div class="col-md-1" style="padding-top: 30px;">
+    <button class="btn btn-primary pr-4 pl-4 ml-5" 
+            [disabled]="isFilterDisabled"
+            (click)="saveDateFilters()">Filter</button>
+  </div>
+</div>
+
+<br/>
+
+<div class="mb-3" style="width:1200px; margin:0 auto;">
+  <p-table #dt 
+      [columns]="cols" [value]="appointments" 
+      [(selection)]="selectedAppointment"
+      [paginator]="true" [rows]="10">
+    <ng-template pTemplate="header" let-columns>
+      <tr>
+        <th class="text-center" style="width:50;">
+          <!-- <p-checkbox 
+            #checkBox binary="true" 
+            [(ngModel)]="allCheckerBox" 
+            (onChange)="selectAllRowData(checkBox.checked)">
+          </p-checkbox> -->
+        </th>
+        <th class="text-center" *ngFor="let col of columns" [pSortableColumn]="col.field">
+          {{col.header}}
+          <p-sortIcon 
+            [field]="col.field" 
+            ariaLabel="Activate to sort" 
+            ariaLabelDesc="Activate to sort in descending order" 
+            ariaLabelAsc="Activate to sort in ascending order">
+          </p-sortIcon>
+        </th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData>
+      <tr [pSelectableRow]="rowData">
+        <td class="text-center">
+          <p-tableRadioButton [value]="rowData"></p-tableRadioButton>
+          <!-- <p-tableCheckbox 
+            [value]="rowData" 
+            (click)="selectRowData(rowData)">
+          </p-tableCheckbox> -->
+        </td>
+        <td class="text-center">{{rowData.doctorName}}</td>
+        <td class="text-center">{{rowData.patientName}}</td>
+        <td class="text-center">{{rowData.startDateTime | date: 'short'}}</td>
+        <td class="text-center">{{rowData.endDateTime | date: 'short'}}</td>
+        <td class="text-center">{{rowData.comments}}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<br/>
+
+<div class="button text-center">
+  <button type="button" 
+          class="btn mr-3 btn-primary" 
+          (click)="createAppointment()"
+          [disabled]="this.selectedAppointment"
+          [ngClass]="{'disable-button': this.selectedAppointment,
+                      'enabled-button': !this.selectedAppointment}">Create</button>
+  <button type="button" 
+          class="btn mr-3 btn-primary" 
+          (click)="editAppointment()" 
+          [disabled]="!this.selectedAppointment"
+          [ngClass]="{'disable-button': !this.selectedAppointment,
+                      'enabled-button': this.selectedAppointment}">Edit</button>
+  <button type="button" 
+          class="btn mr-3 btn-secondary" 
+          [disabled]="!this.selectedAppointment"
+          (click)="showDeleteConfirmationModal()">Delete</button>
+</div>
+
+<div class="appointmentDialog-container">
+  <p-dialog header="Appointment Form" 
+            id="appointmentModal" [style]="{width: '40vw'}"
+            [modal]="true" [(visible)]="displayAppointmentModal" 
+            [draggable]="false" [resizable]="false" [closable]="false">
+  <div>
+
+    <form [formGroup]="appointmentForm">
+      <div class="modal-body">
+        
+        <!-- Doctor's Name -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">Doctor's Name:</label>
+          <div class="col-sm-6 pad-right-0">
+            <input id="doctorName" type="text" pInputText formControlName="doctorName">
+          </div>
+        </div>
+
+        <!-- Patient's Name -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">Patient's Name:</label>
+          <div class="col-sm-6 pad-right-0">
+              <input id="patientName" type="text" pInputText formControlName="patientName">
+            </div>
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">Start Date:</label>
+          <div class="col-sm-6 pad-right-0">
+            <p-calendar 
+              id="startDate" [disabledDays]="[0]"
+              formControlName="startDate" 
+              (onSelect)="checkFormValidity()"
+              [readonlyInput]=true [showIcon]="true" appendTo="body">
+            </p-calendar>
+          </div>
+        </div>
+
+        <!-- End Date -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">End Date:</label>
+          <div class="col-sm-6 pad-right-0">
+            <p-calendar 
+              id="endDate" [disabledDays]="[0]"
+              formControlName="endDate"
+              (onSelect)="checkFormValidity()"
+              [readonlyInput]=true [showIcon]="true" appendTo="body">
+            </p-calendar>
+          </div>
+        </div>
+
+        <!-- Start Time -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">Start Time:</label>
+          <div class="col-sm-6 pad-right-0">
+            <p-calendar id="startTime"
+              formControlName="startTime"
+              [stepMinute]="5" hourFormat="12"
+              (onSelect)="checkFormValidity()"
+              [timeOnly]="true" [readonlyInput]=true appendTo="body">
+            </p-calendar>
+          </div>
+        </div>
+
+        <!-- End Time -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">End Time:</label>
+          <div class="col-sm-6 pad-right-0">
+            <p-calendar id="endTime"
+              formControlName="endTime"
+              [stepMinute]="5" hourFormat="12"
+              (onSelect)="checkFormValidity()"
+              [timeOnly]="true" [readonlyInput]=true appendTo="body">
+            </p-calendar>
+          </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="form-group row ui-g ui-fluid">
+          <label class="col-sm-4 col-form-label">Comments:</label>
+          <div class="col-sm-6 pad-right-0">
+            <textarea id="comments" 
+            pInputTextarea rows="5" cols="30" 
+            formControlName="comments"></textarea>
+          </div>
+        </div>
+
+        <span class="text-center" *ngIf="hasConflict" class="err-validation">
+          * current date time setting has conflict on other appointments.
+        </span>
+        
+      </div>
+    </form>
+    </div>
+    <p-footer>
+      <button id="btnSubmit" type="submit" pButton label="Submit"
+              [disabled]="isSubmitDisabled"
+              [ngClass]="{'disable-button': this.isSubmitDisabled,
+                          'enabled-button': !this.isSubmitDisabled}"
+              (click)="showConfirmationModal()"></button>
+      <button id="btnCancel" type="button" class="btnGray" pButton 
+              (click)="displayAppointmentModal=false" label="Cancel"></button>
+    </p-footer>
+  </p-dialog>
+</div>
+
+<!-- Submit Confirmation Dialog -->
+<p-dialog 
+  header="Confirmation" 
+  [modal]="true" [style]="{width: '30vw'}"
+  [(visible)]="submitConfirmationModal" 
+  [draggable]="false" 
+  [resizable]="false">
+    <p class="text-center confirmation-modal">Do you want to proceed submitting this appointment?</p>
+    <p-footer class="border-0">
+    <button pButton type="submit" label="Yes"
+        (click)="submitFields()">
+    </button>
+    <button pButton type="button"  label="No"
+        class="ui-button-secondary"
+        (click)="submitConfirmationModal=false"></button>
+    </p-footer>
+</p-dialog>
+
+<!-- Cancel Confirmation Dialog -->
+<p-dialog header="Confirmation" 
+  [modal]="true" [style]="{width: '30vw'}"
+  [(visible)]="deleteConfirmationModal" 
+  [draggable]="false" 
+  [resizable]="false">
+  <p class="text-center confirmation-modal">Do you want to proceed deleting this appointment?</p>
+  <p-footer class="border-0">
+  <button pButton type="submit" label="Yes"
+    (click)="deleteConfirmationModal=false; deleteAppointment()">
+  </button>
+  <button pButton type="button" label="No"
+    class="ui-button-secondary"
+    (click)="deleteConfirmationModal=false"></button>
+  </p-footer>
+</p-dialog>
