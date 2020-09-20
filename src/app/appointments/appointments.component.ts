@@ -33,6 +33,7 @@ export class AppointmentsComponent implements OnInit {
   isFilterDisabled: boolean = false;
   hasConflictFlag: boolean = false;
   invalidDateRangeFlag: boolean = false;
+  isTimeRangeValid: boolean = false;
 
   startDateFilter: Date;
   endDateFilter: Date ;
@@ -103,6 +104,7 @@ export class AppointmentsComponent implements OnInit {
       this.appointmentService.deleteAppointment(this.selectedAppointment.id).subscribe(
         response => {
           this.getAllAppointments();
+          this.selectedAppointment = null;
         },
         error => {}
       )
@@ -115,12 +117,20 @@ export class AppointmentsComponent implements OnInit {
     const startTime: Date  = this.appointmentForm.get(AppointmentField.START_TIME).value;
     const endTime: Date  = this.appointmentForm.get(AppointmentField.END_TIME).value;
 
+    if ((!this.isNullorUndefined(endTime) && endTime.getHours() == 17 && endTime.getMinutes() > 0)
+          || (!this.isNullorUndefined(endTime) && endTime.getHours() > 17 )
+            || (!this.isNullorUndefined(startTime) && startTime.getHours() < 9)) {
+      this.isTimeRangeValid = true;
+    } else {
+      this.isTimeRangeValid = false;
+    }
+
     if (!this.isNullorUndefined(startDate) && !this.isNullorUndefined(endDate)
           && !this.isNullorUndefined(startTime) && !this.isNullorUndefined(endTime)) {
-        const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 
-                    startTime.getHours(), startTime.getMinutes());
-        const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 
-                  endTime.getHours(), endTime.getMinutes());
+        const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), 
+                                startDate.getDate(), startTime.getHours(), startTime.getMinutes());
+        const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(),
+                              endDate.getDate(), endTime.getHours(), endTime.getMinutes());
         let start = this.datePipe.transform(startDateTime, 'yyyy-MM-dd HH:mm');
         let end = this.datePipe.transform(endDateTime, 'yyyy-MM-dd HH:mm');
       if (!(startDateTime > endDateTime)) {
@@ -131,7 +141,6 @@ export class AppointmentsComponent implements OnInit {
                         : 'null';
           this.appointmentService.checkAppointmentConflictWithId(id, start, end).subscribe(
             hasConflict => {
-              this.appointmentForm.setErrors(hasConflict ? {'hasConflict':true} : null)
               this.hasConflictFlag = hasConflict;
             },
             error => {}
@@ -155,7 +164,6 @@ export class AppointmentsComponent implements OnInit {
   }
 
   mapAppointmentformToModel(): AppointmentModel {
-    console.log('kumagat ba')
     const appointmentObj = new AppointmentModel();
     const startDate: Date  = this.appointmentForm.get(AppointmentField.START_DATE).value;
     const endDate: Date  = this.appointmentForm.get(AppointmentField.END_DATE).value;

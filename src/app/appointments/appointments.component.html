@@ -38,11 +38,6 @@
     <ng-template pTemplate="header" let-columns>
       <tr>
         <th class="text-center" style="width:50;">
-          <!-- <p-checkbox 
-            #checkBox binary="true" 
-            [(ngModel)]="allCheckerBox" 
-            (onChange)="selectAllRowData(checkBox.checked)">
-          </p-checkbox> -->
         </th>
         <th class="text-center" *ngFor="let col of columns" [pSortableColumn]="col.field">
           {{col.header}}
@@ -59,10 +54,6 @@
       <tr [pSelectableRow]="rowData">
         <td class="text-center">
           <p-tableRadioButton [value]="rowData"></p-tableRadioButton>
-          <!-- <p-tableCheckbox 
-            [value]="rowData" 
-            (click)="selectRowData(rowData)">
-          </p-tableCheckbox> -->
         </td>
         <td class="text-center">{{rowData.doctorName}}</td>
         <td class="text-center">{{rowData.patientName}}</td>
@@ -159,7 +150,7 @@
           <div class="col-sm-6 pad-right-0">
             <p-calendar id="startTime"
               formControlName="startTime"
-              [stepMinute]="5" hourFormat="12"
+              [stepMinute]="1" hourFormat="12"
               (onSelect)="checkFormValidity()"
               [timeOnly]="true" [readonlyInput]=true appendTo="body">
             </p-calendar>
@@ -172,7 +163,7 @@
           <div class="col-sm-6 pad-right-0">
             <p-calendar id="endTime"
               formControlName="endTime"
-              [stepMinute]="5" hourFormat="12"
+              [stepMinute]="1" hourFormat="12"
               (onSelect)="checkFormValidity()"
               [timeOnly]="true" [readonlyInput]=true appendTo="body">
             </p-calendar>
@@ -192,11 +183,14 @@
           </div>
         </div>
 
-        <span class="text-center" *ngIf="appointmentForm.hasError('hasConflict')" class="err-validation">
+        <span class="text-center" *ngIf="hasConflictFlag" class="err-validation"><br/>
           * current date time setting has conflict on other appointments.
         </span>
-        <span class="text-center" *ngIf="invalidDateRangeFlag" class="err-validation">
+        <span class="text-center" *ngIf="invalidDateRangeFlag" class="err-validation"><br/>
           * start date time should not be greater than end date time.
+        </span>
+        <span class="text-center" *ngIf="isTimeRangeValid" class="err-validation"><br/>
+          * start and end time should be from 9:00 AM to 5:00 PM.
         </span>
         
       </div>
@@ -204,9 +198,9 @@
     </div>
     <p-footer>
       <button id="btnSubmit" type="submit" pButton label="Submit"
-              [disabled]="!appointmentForm.valid"
-              [ngClass]="{'disable-button': !appointmentForm.valid,
-                          'enabled-button': appointmentForm.valid}"
+              [disabled]="!appointmentForm.valid || hasConflictFlag || invalidDateRangeFlag || isTimeRangeValid"
+              [ngClass]="{'disable-button': !appointmentForm.valid || hasConflictFlag || invalidDateRangeFlag || isTimeRangeValid,
+                          'enabled-button': appointmentForm.valid || !hasConflictFlag || !invalidDateRangeFlag || !isTimeRangeValid}"
               (click)="showConfirmationModal()"></button>
       <button id="btnCancel" type="button" class="btnGray" pButton 
               (click)="closeConfirmationModel()" label="Cancel"></button>
