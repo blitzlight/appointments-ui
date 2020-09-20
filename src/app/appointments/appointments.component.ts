@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AppointmentField } from '../core/constant/AppointmentField';
 import { AppointmentModel } from '../core/model/appointment-model';
 import * as moment from "moment";
@@ -23,12 +23,16 @@ export class AppointmentsComponent implements OnInit {
   selectedAppointment: AppointmentDTO;
   appointmentForm: FormGroup;
 
+  formMode: string;
+
   displayAppointmentModal: boolean = false;
   submitConfirmationModal: boolean = false;
   deleteConfirmationModal: boolean = false;
+  
   isSubmitDisabled: boolean = true;
   isFilterDisabled: boolean = false;
-  hasConflict: boolean = false;
+  hasConflictFlag: boolean = false;
+  invalidDateRangeFlag: boolean = false;
 
   startDateFilter: Date;
   endDateFilter: Date ;
@@ -62,26 +66,24 @@ export class AppointmentsComponent implements OnInit {
 
   createAppointmentForm() {
     this.appointmentForm = this.formBuilder.group({
-      doctorName: [],
-      patientName: [],
-      startDate: [],
-      endDate: [],
-      startTime: [],
-      endTime: [],
-      comments: []
+      doctorName: ['', Validators.required],
+      patientName: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      startTime: ['', Validators.required],
+      endTime: ['', Validators.required],
+      comments: ['', Validators.required]
     });
   }
 
   createAppointment() {
+    this.formMode = 'submit';
     this.displayAppointmentModal = true;
     this.appointmentForm.reset();
-    this.appointmentForm.get(AppointmentField.START_DATE).setValue(new Date());
-    this.appointmentForm.get(AppointmentField.END_DATE).setValue(new Date());
-    this.appointmentForm.get(AppointmentField.START_TIME).setValue(new Date());
-    this.appointmentForm.get(AppointmentField.END_TIME).setValue(new Date());
   }
 
   editAppointment() {
+    this.formMode = 'edit';
     if (null !== this.selectedAppointment) {
       this.displayAppointmentModal = true;
       const startDateTime: Date = new Date(this.selectedAppointment.startDateTime);
@@ -107,37 +109,64 @@ export class AppointmentsComponent implements OnInit {
     }
   }
 
-  showDeleteConfirmationModal() {
-    this.deleteConfirmationModal = true;
-  }
+  checkFormValidity() {
+    const startDate: Date  = this.appointmentForm.get(AppointmentField.START_DATE).value;
+    const endDate: Date  = this.appointmentForm.get(AppointmentField.END_DATE).value;
+    const startTime: Date  = this.appointmentForm.get(AppointmentField.START_TIME).value;
+    const endTime: Date  = this.appointmentForm.get(AppointmentField.END_TIME).value;
 
-  showConfirmationModal() {
-    this.submitConfirmationModal = true;
+    if (!this.isNullorUndefined(startDate) && !this.isNullorUndefined(endDate)
+          && !this.isNullorUndefined(startTime) && !this.isNullorUndefined(endTime)) {
+        const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 
+                    startTime.getHours(), startTime.getMinutes());
+        const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 
+                  endTime.getHours(), endTime.getMinutes());
+        let start = this.datePipe.transform(startDateTime, 'yyyy-MM-dd HH:mm');
+        let end = this.datePipe.transform(endDateTime, 'yyyy-MM-dd HH:mm');
+      if (!(startDateTime > endDateTime)) {
+        this.invalidDateRangeFlag = false;
+          let id = !this.isNullorUndefined(this.selectedAppointment)
+                      && !this.isNullorUndefined(this.selectedAppointment.id)
+                        ? this.selectedAppointment.id.toString()
+                        : 'null';
+          this.appointmentService.checkAppointmentConflictWithId(id, start, end).subscribe(
+            hasConflict => {
+              this.appointmentForm.setErrors(hasConflict ? {'hasConflict':true} : null)
+              this.hasConflictFlag = hasConflict;
+            },
+            error => {}
+          );
+      } else {
+        this.invalidDateRangeFlag = true;
+      }
+    }
   }
 
   submitFields() {
     this.submitConfirmationModal = false;
-    this.displayAppointmentModal=false;
-
-    console.log(this.mapAppointmentformToModel());
+    this.displayAppointmentModal= false;
     this.appointmentService.saveAppointment(this.mapAppointmentformToModel()).subscribe(
       response => {
         this.getAllAppointments();
+        this.selectedAppointment = null;
       },
       error => {}
     );
   }
 
   mapAppointmentformToModel(): AppointmentModel {
+    console.log('kumagat ba')
     const appointmentObj = new AppointmentModel();
     const startDate: Date  = this.appointmentForm.get(AppointmentField.START_DATE).value;
     const endDate: Date  = this.appointmentForm.get(AppointmentField.END_DATE).value;
     const startTime: Date  = this.appointmentForm.get(AppointmentField.START_TIME).value;
     const endTime: Date  = this.appointmentForm.get(AppointmentField.END_TIME).value;
 
-    if (null !== this.selectedAppointment && null !== this.selectedAppointment.id) {
-      appointmentObj.id = this.selectedAppointment.id;
-    }
+    appointmentObj.id = !this.isNullorUndefined(this.selectedAppointment) 
+                          && !this.isNullorUndefined(this.selectedAppointment.id)
+                            ? this.selectedAppointment.id
+                            : null;
+    
     appointmentObj.doctorName = this.appointmentForm.get(AppointmentField.DOCTOR_NAME).value;
     appointmentObj.patientName = this.appointmentForm.get(AppointmentField.PATIENT_NAME).value;
     appointmentObj.startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 
@@ -147,37 +176,27 @@ export class AppointmentsComponent implements OnInit {
     appointmentObj.comments = this.appointmentForm.get(AppointmentField.COMMENTS).value;
     return appointmentObj;
   }
+
+  showDeleteConfirmationModal() {
+    this.deleteConfirmationModal = true;
+  }
+
+  showConfirmationModal() {
+    this.submitConfirmationModal = true;
+  }
+
+  closeConfirmationModel() {
+    this.displayAppointmentModal=false;
+    this.hasConflictFlag = false;
+    this.invalidDateRangeFlag = false;
+  }
   
   validateDateFilters() {
     this.isFilterDisabled = this.isNullorUndefined(this.startDateFilter) || this.isNullorUndefined(this.endDateFilter);
   }
 
-  saveDateFilters() {
+  filterAppointmentDates() {
     this.getAllAppointments();
-  }
-
-  checkFormValidity() {
-    const startDate: Date  = this.appointmentForm.get(AppointmentField.START_DATE).value;
-    const endDate: Date  = this.appointmentForm.get(AppointmentField.END_DATE).value;
-    const startTime: Date  = this.appointmentForm.get(AppointmentField.START_TIME).value;
-    const endTime: Date  = this.appointmentForm.get(AppointmentField.END_TIME).value;
-    const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 
-                                              startTime.getHours(), startTime.getMinutes());
-    const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 
-                                            endTime.getHours(), endTime.getMinutes());
-    console.log(startDateTime)
-    console.log(endDateTime)
-    let start = this.datePipe.transform(startDateTime, 'yyyy-MM-dd HH:mm');
-    let end = this.datePipe.transform(endDateTime, 'yyyy-MM-dd HH:mm');
-    this.appointmentService.checkAppointmentConflict(
-      undefined !== this.selectedAppointment.id ? this.selectedAppointment.id.toString(): "0", 
-        start, end).subscribe(
-      response => {
-        this.isSubmitDisabled = response;
-        this.hasConflict = response;
-      },
-      error => {}
-    );
   }
 
   isNullorUndefined(value) {

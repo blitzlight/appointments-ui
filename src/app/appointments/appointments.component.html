@@ -24,7 +24,7 @@
   <div class="col-md-1" style="padding-top: 30px;">
     <button class="btn btn-primary pr-4 pl-4 ml-5" 
             [disabled]="isFilterDisabled"
-            (click)="saveDateFilters()">Filter</button>
+            (click)="filterAppointmentDates()">Filter</button>
   </div>
 </div>
 
@@ -109,7 +109,10 @@
         <div class="form-group row ui-g ui-fluid">
           <label class="col-sm-4 col-form-label">Doctor's Name:</label>
           <div class="col-sm-6 pad-right-0">
-            <input id="doctorName" type="text" pInputText formControlName="doctorName">
+            <input id="doctorName" type="text" pInputText formControlName="doctorName"><br/>
+            <span *ngIf="appointmentForm.controls.doctorName.touched && appointmentForm.controls.doctorName.errors?.required"
+              class="err-validation">* Doctor's Name is required.
+            </span>
           </div>
         </div>
 
@@ -117,8 +120,11 @@
         <div class="form-group row ui-g ui-fluid">
           <label class="col-sm-4 col-form-label">Patient's Name:</label>
           <div class="col-sm-6 pad-right-0">
-              <input id="patientName" type="text" pInputText formControlName="patientName">
-            </div>
+              <input id="patientName" type="text" pInputText formControlName="patientName"><br/>
+              <span *ngIf="appointmentForm.controls.patientName.touched && appointmentForm.controls.patientName.errors?.required"
+                class="err-validation">* Patient's Name is required.
+              </span>
+          </div>
         </div>
 
         <!-- Start Date -->
@@ -179,12 +185,18 @@
           <div class="col-sm-6 pad-right-0">
             <textarea id="comments" 
             pInputTextarea rows="5" cols="30" 
-            formControlName="comments"></textarea>
+            formControlName="comments"></textarea><br/>
+            <span *ngIf="appointmentForm.controls.comments.touched && appointmentForm.controls.comments.errors?.required"
+              class="err-validation">* Comments are required.
+            </span>
           </div>
         </div>
 
-        <span class="text-center" *ngIf="hasConflict" class="err-validation">
+        <span class="text-center" *ngIf="appointmentForm.hasError('hasConflict')" class="err-validation">
           * current date time setting has conflict on other appointments.
+        </span>
+        <span class="text-center" *ngIf="invalidDateRangeFlag" class="err-validation">
+          * start date time should not be greater than end date time.
         </span>
         
       </div>
@@ -192,12 +204,12 @@
     </div>
     <p-footer>
       <button id="btnSubmit" type="submit" pButton label="Submit"
-              [disabled]="isSubmitDisabled"
-              [ngClass]="{'disable-button': this.isSubmitDisabled,
-                          'enabled-button': !this.isSubmitDisabled}"
+              [disabled]="!appointmentForm.valid"
+              [ngClass]="{'disable-button': !appointmentForm.valid,
+                          'enabled-button': appointmentForm.valid}"
               (click)="showConfirmationModal()"></button>
       <button id="btnCancel" type="button" class="btnGray" pButton 
-              (click)="displayAppointmentModal=false" label="Cancel"></button>
+              (click)="closeConfirmationModel()" label="Cancel"></button>
     </p-footer>
   </p-dialog>
 </div>

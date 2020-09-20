@@ -33,8 +33,18 @@ export class AppointmentService {
     return this.http.delete<AppointmentModel>(url);
   }
 
-  checkAppointmentConflict(id: string, startDateTime: string, endDateTime: string) {
+  checkAppointmentConflict(startDateTime: string, endDateTime: string) {
     const url = `${this.BASE_URL}/checkAppointmentConflict`;
+    const httpParam = new HttpParams().append('startDateTime', startDateTime)
+                                      .append('endDateTime', endDateTime);
+    const httpOptions = {
+      params: httpParam
+    };
+    return this.http.get<any>(url, httpOptions);
+  }
+
+  checkAppointmentConflictWithId(id: string, startDateTime: string, endDateTime: string) {
+    const url = `${this.BASE_URL}/checkAppointmentConflictWithId`;
     const httpParam = new HttpParams().append('id', id)
                                       .append('startDateTime', startDateTime)
                                       .append('endDateTime', endDateTime);
