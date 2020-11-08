@@ -6,6 +6,10 @@ import * as moment from "moment";
 import { AppointmentService } from '../core/service/appointment.service';
 import { AppointmentDTO } from '../core/model/appointment-dto';
 import { DatePipe, Time } from '@angular/common';
+import {
+  startOfMonth,
+  endOfMonth
+} from 'date-fns';
 
 @Component({
   selector: 'app-appointments',
@@ -28,6 +32,9 @@ export class AppointmentsComponent implements OnInit {
   displayAppointmentModal: boolean = false;
   submitConfirmationModal: boolean = false;
   deleteConfirmationModal: boolean = false;
+
+  doctorList: string[] = []
+  selectedDoctor: string;
   
   isSubmitDisabled: boolean = true;
   isFilterDisabled: boolean = false;
@@ -43,25 +50,28 @@ export class AppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.cols = [
-      { header: 'Doctor', field: 'doctorName'},
-      { header: 'Patient', field: 'patientName'},
+      { header: 'Doctor', field: AppointmentField.DOCTOR_NAME },
+      { header: 'Patient', field: AppointmentField.PATIENT_NAME },
       { header: 'Start Time', field: 'startTime'},
       { header: 'End Time', field: 'endTime'},
-      { header: 'Comments', field: 'comments'},
+      { header: 'Comments', field: AppointmentField.COMMENTS },
     ];
-
+    if (this.isNullorUndefined(this.startDateFilter) || this.isNullorUndefined(this.endDateFilter)) {
+      this.startDateFilter = startOfMonth(new Date);
+      this.endDateFilter = endOfMonth(new Date);
+    }
     this.getAllAppointments();
     this.createAppointmentForm();
     this.validateDateFilters()
   }
 
   getAllAppointments() {
-    let start = this.datePipe.transform(this.startDateFilter, 'yyyy-MM-dd HH:mm');
-    let end = this.datePipe.transform(this.endDateFilter, 'yyyy-MM-dd HH:mm');
+    let start = this.datePipe.transform(this.startDateFilter.setHours(0,0,0,0), 'yyyy-MM-ddTHH:mm:ss')
+    let end = this.datePipe.transform(this.endDateFilter.setHours(23,59,59,59), 'yyyy-MM-ddTHH:mm:ss')
     this.appointmentService.getAllAppointments(start, end).subscribe(
-      response => {
-        this.appointments = response;
-      }
+        response => {
+          this.appointments = response;
+        }
     );
   }
 
@@ -81,6 +91,7 @@ export class AppointmentsComponent implements OnInit {
     this.formMode = 'submit';
     this.displayAppointmentModal = true;
     this.appointmentForm.reset();
+    this.generateDoctorOptions();
   }
 
   editAppointment() {
@@ -97,6 +108,7 @@ export class AppointmentsComponent implements OnInit {
       this.appointmentForm.get(AppointmentField.END_TIME).setValue(endDateTime);
       this.appointmentForm.get(AppointmentField.COMMENTS).setValue(this.selectedAppointment.comments);
     }
+    this.generateDoctorOptions();
   }
 
   deleteAppointment () {
@@ -109,6 +121,10 @@ export class AppointmentsComponent implements OnInit {
         error => {}
       )
     }
+  }
+
+  generateDoctorOptions() {
+
   }
 
   checkFormValidity() {
